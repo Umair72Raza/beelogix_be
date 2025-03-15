@@ -1,5 +1,6 @@
 const Application = require("../models/Application");
 const Job = require("../models/Job");
+const User = require("../models/User");
 const { sendJobApplicationEmail } = require("../utilities/emailService");
 
 // Apply for a Job with Resume Upload & Send Email
@@ -17,18 +18,20 @@ exports.applyForJob = async (req, res) => {
     const jobOwner = await User.findById(job.createdBy);
     if (!jobOwner) return res.status(404).json({ message: "Job owner not found" });
 
+    const resumeLink = `${process.env.BASE_URL}/uploads/${req.file.filename}`;
+
+    console.log("Resume Link:", resumeLink);
+    
+
     // Save the job application
     const application = new Application({
       jobId,
       applicantName,
       applicantEmail,
-      resumeFileName: req.file.filename, // FIXED: Store filename instead of ID
+      resumeLink: resumeLink, // FIXED: Store filename instead of ID
     });
 
     await application.save();
-
-    // Construct the resume download link
-    const resumeLink = `${process.env.BASE_URL}/uploads/${req.file.filename}`; // FIXED: Use filename
 
     // Send email notification to job owner
     await sendJobApplicationEmail(jobOwner.email, applicantName, job.title, resumeLink);
